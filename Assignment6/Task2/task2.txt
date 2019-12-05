@@ -1,0 +1,94 @@
+﻿Install-Module AzTable -Scope CurrentUser
+
+
+$azureSubscriptionName = "Free Trail"
+
+
+#Sign in to Azure
+#Add-AzAccount
+
+
+#Retrieve list of locations
+Get-AzLocation | select Location
+$location = "eastus"
+
+
+#Create new or select current resource group
+$resourceGroup = "rg-assignment6-task2"
+New-AzResourceGroup -ResourceGroupName $resourceGroup -Location $location
+#$resourceGroupName = "rg-assignment6-task2"
+
+
+#Create storage account
+$storageAccountName = "saassigment6ersen"
+$storageAccount = New-AzStorageAccount -ResourceGroupName $resourceGroup `
+  -Name $storageAccountName `
+  -Location $location `
+  -SkuName Standard_LRS `
+  -Kind Storage
+
+$ctx = $storageAccount.Context
+
+
+#Create a new table
+$tableName = "tblCustomer"
+New-AzStorageTable –Name $tableName –Context $ctx
+
+
+#Retrieve a list of tables in the storage account
+Get-AzStorageTable –Context $ctx | select Name
+
+
+#Retrieve a reference to a specific table
+$storageTable = Get-AzStorageTable –Name $tableName –Context $ctx
+
+
+#Reference CloudTable property of a specific table
+$cloudTable = (Get-AzStorageTable –Name $tableName –Context $ctx).CloudTable
+
+
+#Add table entities
+$partitionKey1 = "partition1"
+$partitionKey2 = "partition2"
+
+# add four rows 
+Add-AzTableRow `
+    -table $cloudTable `
+    -partitionKey $partitionKey1 `
+    -rowKey ("IST") -property @{"name"="Mehmet";"surname"="Yildiz";"id"=1;"phone"=5396300000}
+
+Add-AzTableRow `
+    -table $cloudTable `
+    -partitionKey $partitionKey2 `
+    -rowKey ("IZM") -property @{"name"="Mustafa";"surname"="Isik";"id"=2}
+
+Add-AzTableRow `
+    -table $cloudTable `
+    -partitionKey $partitionKey1 `
+    -rowKey ("ANK") -property @{"name"="Ayse";"surname"="Parlak";"id"=4;"phone"=5396500040}
+
+Add-AzTableRow `
+    -table $cloudTable `
+    -partitionKey $partitionKey2 `
+    -rowKey ("ANT") -property @{"name"="Fatma";"surname"="Nur";"id"=6;"phone"=5396500060}
+
+
+#Retrieve all entities
+Get-AzTableRow -table $cloudTable | ft
+
+
+#Retrieve entities for a specific partition
+Get-AzTableRow -table $cloudTable -partitionKey $partitionKey1 | ft
+
+
+#Retrieve entities for a specific value in a specific column
+Get-AzTableRow -table $cloudTable `
+    -columnName "name" `
+    -value "Ayse" `
+    -operator Equal
+
+
+#Retrieve entities using a custom filter
+Get-AzTableRow `
+    -table $cloudTable `
+    -customFilter "(name eq Ayse)"
